@@ -493,11 +493,12 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 	log.Debugln("nodeID:", nodeID)
 
 	rootNode := kv.RootKey + "/nodes/" + nodeID + "/domains"
+	log.Debugln("rootNode = ", rootNode)
 
 	domainNode := rootNode + "/domainlist"
 	pairDomain, errDomain := kv.Store.Get(domainNode)
 	if errDomain != nil {
-		log.Errorln("Store.Get(domain) err:", errDomain)
+		log.Errorln("Store.Get(", domainNode, ") err:", errDomain)
 		log.Debugln("GetMetadata LEAVE")
 		return nil, errDomain
 	}
@@ -525,7 +526,7 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 		sdsNode := rootNode + "/" + domain + "/sdslist"
 		pairSds, errSds := kv.Store.Get(sdsNode)
 		if errSds != nil {
-			log.Errorln("Store.Get(sds) err:", errSds)
+			log.Errorln("Store.Get(", sdsNode, ") err:", errSds)
 			log.Debugln("GetMetadata LEAVE")
 			return nil, errSds
 		}
@@ -538,10 +539,8 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 
 		sdsList := strings.Split(string(pairSds.Value), ",")
 		for _, sds := range sdsList {
-			s := new(Sds)
-			s.Name = sds
-
 			sdsRoot := rootNode + "/" + domain + "/sdss/" + sds
+			log.Debugln("sdsRoot = ", sdsRoot)
 
 			sdsType := sdsRoot + "/type"
 			pairType, errType := kv.Store.Get(sdsType)
@@ -571,6 +570,8 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 			}
 			log.Debugln(pairFault.Key, "=", string(pairFault.Value))
 
+			s := new(Sds)
+			s.Name = sds
 			s.Mode = string(pairType.Value)
 			s.FaultSet = string(pairFault.Value)
 
@@ -581,7 +582,7 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 		poolNode := rootNode + "/" + domain + "/poollist"
 		pairPool, errPool := kv.Store.Get(poolNode)
 		if errPool != nil {
-			log.Errorln("Store.Get(pool) err:", errPool)
+			log.Errorln("Store.Get(", poolNode, ") err:", errPool)
 			log.Debugln("GetMetadata LEAVE")
 			return nil, errPool
 		}
@@ -604,7 +605,7 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 			deviceNode := rootNode + "/" + domain + "/pools/" + pool
 			pairDevice, errDevice := kv.Store.Get(deviceNode)
 			if errDevice != nil {
-				log.Errorln("Store.Get(device) err:", errDevice)
+				log.Errorln("Store.Get(", deviceNode, ") err:", errDevice)
 				log.Debugln("GetMetadata LEAVE")
 				return nil, errDevice
 			}
@@ -653,8 +654,8 @@ func (kv *KvStore) SetMetadata(nodeID string, metaData *Metadata) error {
 	//Domain
 	domainList := ""
 	for _, domain := range metaData.ProtectionDomains {
+		log.Debugln("Enter", domain.Name)
 		domainNode := domainRoot + "/" + domain.Name
-		log.Debugln("Enter", domainNode)
 
 		if len(domain.Pools) == 0 {
 			log.Debugln("PoolList is empty. Set Delete = true")
@@ -694,7 +695,9 @@ func (kv *KvStore) SetMetadata(nodeID string, metaData *Metadata) error {
 
 		sdsList := ""
 		for _, sds := range domain.Sdss {
+			log.Debugln("Enter", sds.Name)
 			sdsNode := sdsRoot + "/" + sds.Name
+
 			if sds.Delete {
 				err := kv.deleteTree(sdsNode)
 				if err == nil {
