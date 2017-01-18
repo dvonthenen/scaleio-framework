@@ -418,7 +418,7 @@ func (s *RestServer) processAdditions(metaData *kvstore.Metadata, node *types.Sc
 		//Sds
 		//TODO assume only a single Sds per ProtectionDomain. Will change later.
 		//As such, the SDS is implicitly created.
-		sdsName := "sds_" + node.IPAddress
+		sdsName := node.IPAddress
 		if mDomain.Sdss == nil {
 			mDomain.Sdss = make(map[string]*kvstore.Sds)
 		}
@@ -426,12 +426,19 @@ func (s *RestServer) processAdditions(metaData *kvstore.Metadata, node *types.Sc
 			mDomain.Sdss[sdsName] = &kvstore.Sds{
 				Name: sdsName,
 				Add:  true,
-				Mode: kvstore.SdsModeAll,
+				Mode: "all",
 			}
 			bHasChange = true
 		} else {
 			log.Debugln("SDS (", sdsName, ") already exists")
 		}
+
+		//TODO: FaultSets
+		/*
+			for keyFS, nFaultSet := range nDomain.FaultSets {
+
+			}
+		*/
 
 		//Pool
 		for keyP, nPool := range nDomain.Pools {
@@ -521,7 +528,7 @@ func (s *RestServer) processMetadata(client *goscaleio.Client, node *types.Scale
 			if errSds != nil {
 				if !sds.Delete && sds.Add {
 					//TODO fix the IPAddress when ServerOnly and ClientOnly is implemented
-					_, err := scaleioDomain.CreateSds(sds.Name, []string{node.IPAddress})
+					_, err := scaleioDomain.CreateSds(sds.Name, []string{sds.Name}, []string{sds.Mode}, sds.FaultSet)
 					if err == nil {
 						log.Infoln("SDS created:", sds.Name)
 					} else {

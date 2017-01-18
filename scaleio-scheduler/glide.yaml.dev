@@ -24,6 +24,6 @@ import:
   ref:     951109e32f8cfa3c4b2b070322d48154a23043f1
   repo:    https://github.com/dvonthenen/goscaleio
 - package: github.com/codedellemc/scaleio-framework
-  ref:     a8a1be0c946a19f97fdc962150626186f3315078
+  ref:     fdde9443dac330896fd1d3e89b9be86d8f127948
   vcs:     git
   repo:    https://github.com/dvonthenen/scaleio-framework

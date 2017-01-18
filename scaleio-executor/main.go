@@ -22,11 +22,6 @@ func init() {
 }
 
 func main() {
-	for _, e := range os.Environ() {
-		pair := strings.Split(e, "=")
-		log.Debugln(pair[0], "=", pair[1])
-	}
-
 	cfg := config.NewConfig()
 	fs := flag.NewFlagSet("executor", flag.ExitOnError)
 	cfg.AddFlags(fs)
@@ -40,6 +35,11 @@ func main() {
 		log.Infoln("Set logging to", cfg.LogLevel)
 	}
 	log.SetLevel(level)
+
+	for _, e := range os.Environ() {
+		pair := strings.Split(e, "=")
+		log.Debugln(pair[0], "=", pair[1])
+	}
 
 	log.Infoln("ExecutorID:", cfg.ExecutorID)
 	log.Infoln("FrameworkID:", cfg.FrameworkID)

@@ -57,7 +57,7 @@ type StoragePool struct {
 //Sds representation
 type Sds struct {
 	Name     string
-	Mode     string
+	Mode     string //Values: all, sdcOnly, sdsOnly
 	FaultSet string
 	Delete   bool
 	Add      bool

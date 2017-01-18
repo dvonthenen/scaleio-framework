@@ -52,11 +52,6 @@ func prerequisites(cfg *config.Config) bool {
 }
 
 func main() {
-	for _, e := range os.Environ() {
-		pair := strings.Split(e, "=")
-		log.Debugln(pair[0], "=", pair[1])
-	}
-
 	cfg := config.NewConfig()
 	fs := flag.NewFlagSet("scheduler", flag.ExitOnError)
 	cfg.AddFlags(fs)
@@ -70,6 +65,11 @@ func main() {
 		log.Infoln("Set logging to", cfg.LogLevel)
 	}
 	log.SetLevel(level)
+
+	for _, e := range os.Environ() {
+		pair := strings.Split(e, "=")
+		log.Debugln(pair[0], "=", pair[1])
+	}
 
 	if !prerequisites(cfg) {
 		return //prerequisites not met
