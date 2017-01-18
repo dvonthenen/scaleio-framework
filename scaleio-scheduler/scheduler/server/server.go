@@ -540,14 +540,14 @@ func (s *RestServer) processMetadata(client *goscaleio.Client, node *types.Scale
 				}
 				tmpSds, errSds = scaleioDomain.FindSds("Name", sds.Name)
 				if errSds == nil {
-					log.Infoln("SDS found:", sds.Name)
+					log.Infoln("SDS found:", sds.Name, "FaultSet:", tmpSds.FaultSetID)
 				} else {
 					log.Errorln("FindSds Error:", errSds)
 					log.Debugln("processMetadata LEAVE")
 					return errSds
 				}
 			} else {
-				log.Infoln("SDS exists:", sds.Name)
+				log.Infoln("SDS exists:", sds.Name, "FaultSet:", tmpSds.FaultSetID)
 			}
 		}
 
