@@ -549,14 +549,6 @@ func (s *RestServer) processMetadata(client *goscaleio.Client, node *types.Scale
 			} else {
 				log.Infoln("SDS exists:", sds.Name)
 			}
-
-			if sds.Mode == kvstore.SdsModeClient {
-				log.Debugln("Skipping SDS", sds.Name, "as it is client only.")
-				continue
-			}
-
-			log.Debugln("Using SDS", sds.Name, "as it is server or all.")
-			scaleioSds = goscaleio.NewSdsEx(client, tmpSds)
 		}
 
 		//StoragePool
