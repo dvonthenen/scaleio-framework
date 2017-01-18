@@ -33,11 +33,11 @@ Optional: The URL for which Mesos Module DVDI to install. Default: latest suppor
 Optional: *Highly recommend not to modify* Mesos scheduler REST API address.
 Default: Dynamically calculated.
 
-`-rest.port=<port>`
+`-rest.port=(port)`
 Required: *Highly recommend using the dynamic Marathon port* Mesos scheduler
 REST API port.
 
-`-uri=<mesos master uri>`
+`-uri=(mesos master uri)`
 Required: Mesos scheduler API URL. This is the Mesos Master HTTP API endpoint.
 
 `-executor.cpu.factor=[float value]`  
@@ -79,15 +79,15 @@ Required: ScaleIO Admin Password. This is used to install all ScaleIO packages
 that require a ScaleIO admin password, the password to access the ScaleIO gateway,
 and etc. Default: Scaleio123
 
-`-scaleio.preconfig.primary=<fqdn/ip of pri MDM node>`  
+`-scaleio.preconfig.primary=(fqdn/ip of pri MDM node)`  
 Required: FQDN or IP of the pre-configured Pri MDM Node. Requires Sec and TB MDM
 nodes to be pre-configured
 
-`-scaleio.preconfig.secondary=<fqdn/ip of sec MDM node>`  
+`-scaleio.preconfig.secondary=(fqdn/ip of sec MDM node)`  
 Required: FQDN or IP of the pre-configured Sec MDM Node. Requires Pri and TB MDM
 nodes to be pre-configured
 
-`-scaleio.preconfig.tiebreaker=<fqdn/ip of sec MDM node>`  
+`-scaleio.preconfig.tiebreaker=(fqdn/ip of sec MDM node)`  
 Required: FQDN or IP of the pre-configured Tiebreaker MDM Node. Requires Pri and
 Sec MDM nodes to be pre-configured
 
@@ -189,17 +189,17 @@ This will allow for multiple ScaleIO clusters to run in the same Mesos cluster. 
 Optional: ScaleIO API Version. Matches the API version of the ScaleIO software
 the framework installs. Default: 2.0
 
-`-store.delete=<true|false>`  
+`-store.delete=[true|false]`  
 Optional: Helper function that deletes ScaleIO Framework Key/Value Store. Default: false
 
-`-store.dump=<true|false>`  
+`-store.dump=[true|false]`  
 Optional: Helper function that dumps ScaleIO Framework Key/Value Store. Default: false
 
-`-store.add.key=<key to add to store>`  
+`-store.add.key=[key to add to store]`  
 Optional: Modify a select store key. Default: "empty string"
 
-`-store.add.value=<value to add to the store>`  
+`-store.add.value=[value to add to the store]`  
 Optional: Set the values to the key provided by store.key. Default: "empty string"
 
-`-store.del.key=<key to delete>`  
+`-store.del.key=[key to delete]`  
 Optional: Delete a select store key. Default: "empty string"
