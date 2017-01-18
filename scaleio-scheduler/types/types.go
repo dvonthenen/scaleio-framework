@@ -127,11 +127,18 @@ type StoragePool struct {
 	KeyValue map[string]string `json:"keyvalue,omitempty"`
 }
 
+//FaultSet describes a ScaleIO FaultSet
+type FaultSet struct {
+	Name   string   `json:"name"`
+	SdsIps []string `json:"sdsips"`
+}
+
 //ProtectionDomain describes a ScaleIO ProtectionDomain
 type ProtectionDomain struct {
-	Name     string            `json:"name"`
-	KeyValue map[string]string `json:"keyvalue,omitempty"`
-	Pools    map[string]*StoragePool
+	Name      string            `json:"name"`
+	KeyValue  map[string]string `json:"keyvalue,omitempty"`
+	Pools     map[string]*StoragePool
+	FaultSets map[string]*FaultSet
 }
 
 //ScaleIONode node definition

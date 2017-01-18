@@ -17,14 +17,20 @@ Metadata structure on disk for the Mesos Agent:
     protection domain
     storage pool - 1 to many devices
 
-scaleio-s-domains = domain1,domain2
-scaleio-s-domain1 = pool1,pool2
-scaleio-s-domain2 = pool3
-scaleio-s-pool1 = /dev/vxdf,/dev/vxdg
+scaleio-sds-domains = domain1,domain2
+scaleio-sds-domain1 = pool1,pool2
+scaleio-sds-domain1-faultsets = set1 (out of set1, set2)
+scaleio-sds-domain1-set1 = 10.0.0.10,10.0.1.10
+scaleio-sds-domain2 = pool3
+scaleio-sds-domain1-pool1 = /dev/vxdf,/dev/vxdg
+scaleio-sds-domain1-pool2 = /dev/vxdh
+scaleio-sds-domain2-faultsets = set2
+scaleio-sds-domain2-set1 = 10.0.0.13
+scaleio-sds-domain2-pool3 = /dev/vxdi
 
-scaleio-c-domains = domain1,domain2
-scaleio-c-domain1 = pool1
-scaleio-c-domain2 = pool3
+scaleio-sdc-domains = domain1,domain2
+scaleio-sdc-domain1 = pool1
+scaleio-sdc-domain2 = pool3
 
 
 Metadata structure in the KeyValue Store:
@@ -40,31 +46,42 @@ scaleio-framework/<framework role>
 		/10.0.0.10
 			persona = 1
 			state = 2, 3, etc
+			domainlist = domain1,domain2
 			/domains
-				sdss = 10.0.0.10_sds1,10.0.0.10_sds2
-				domains = domain1,domain2
 				/domain1
-					pools = pool1,pool2
-					pool1 = /dev/xvdf,/dev/xvdg
-					pool2 = /dev/xvdh
+					sdslist = 10.0.0.10,10.0.1.10
+					/sdss
+						/10.0.0.10
+							type = sds_only
+							faultset  = set1
+						/10.0.1.10
+							type = sdc_only
+					poollist = pool1,pool2
+					/pools
+						pool1 = /dev/xvdf,/dev/xvdg
+						pool2 = /dev/xvdh
 				/domain2
-					pools = pool3
-					pool3 = /dev/xvdi
+					sdslist = 10.0.0.12
+					/sdss
+						/s10.0.0.12
+							type = all
+							faultset  = set2
+					faultsetlist = set2
+					poollist = pool3
+					/pools
+						pool3 = /dev/xvdi
 		/10.0.0.11
 			persona = 2
 			state = 2, 3, etc
-			/domains
-				...
+			...
 		/10.0.0.12
 			persona = 3
 			state = 2, 3, etc
-			/domains
-				...
+			...
 		/10.0.0.13
 			persona = 4
 			state = 2, 3, etc
-			/domains
-				...
+			...
 */
 
 var (

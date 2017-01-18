@@ -81,6 +81,7 @@ func prepareScaleIONode(store *kvstore.KvStore, offer *mesos.Offer) (*types.Scal
 	}
 
 	for i := 0; i < 2; i++ {
+		//domains
 		value, err := getAttributeByKey(offer.GetAttributes(), keys[i])
 		if err != nil {
 			log.Warnln("Attribute", keys[i], "not found")
@@ -104,6 +105,39 @@ func prepareScaleIONode(store *kvstore.KvStore, offer *mesos.Offer) (*types.Scal
 			}
 			nDomain := node.ProvidesDomains[fsDomain]
 
+			//faultsets
+			fsStr, err := getAttributeByKey(offer.GetAttributes(), fixprefix[i](fsDomain+"-faultsets"))
+			if err != nil {
+				log.Warnln("Attribute", fixprefix[i](fsDomain+"-faultsets"), "not found")
+			} else {
+				log.Infoln("Attribute", fixprefix[i](fsDomain+"-faultsets"), "found!")
+				fsFaultSets := strings.Split(fsStr, ",")
+				for _, fsFaultSet := range fsFaultSets {
+					if nDomain.FaultSets == nil {
+						nDomain.FaultSets = make(map[string]*types.FaultSet)
+					}
+					if nDomain.FaultSets[fsFaultSet] == nil {
+						nDomain.FaultSets[fsFaultSet] = &types.FaultSet{
+							Name:   fsFaultSet,
+							SdsIps: make([]string, 0),
+						}
+					}
+					nFaultSet := nDomain.FaultSets[fsFaultSet]
+
+					sdsIpsStr, err := getAttributeByKey(offer.GetAttributes(), fixprefix[i](fsDomain+"-"+fsFaultSet))
+					if err != nil {
+						log.Warnln("Attribute", fixprefix[i](fsDomain+"-"+fsFaultSet), "not found")
+						continue
+					}
+
+					fsSdsIPs := strings.Split(sdsIpsStr, ",")
+					for _, fsSdsIP := range fsSdsIPs {
+						nFaultSet.SdsIps = append(nFaultSet.SdsIps, fsSdsIP)
+					}
+				}
+			}
+
+			//pools
 			poolsStr, err := getAttributeByKey(offer.GetAttributes(), fixprefix[i](fsDomain))
 			if err != nil {
 				log.Warnln("Attribute", fixprefix[i](fsDomain), "not found")
@@ -124,10 +158,14 @@ func prepareScaleIONode(store *kvstore.KvStore, offer *mesos.Offer) (*types.Scal
 				}
 				nPool := nDomain.Pools[fsPool]
 
-				deviceStr, err := getAttributeByKey(offer.GetAttributes(), fixprefix[i](fsPool))
+				deviceStr, err := getAttributeByKey(offer.GetAttributes(), fixprefix[i](fsDomain+"-"+fsPool))
 				if err != nil {
-					log.Warnln("Attribute", fixprefix[i](fsPool), "not found")
-					continue
+					//TODO preserve backwards compatibility, delete at some point
+					deviceStr, err = getAttributeByKey(offer.GetAttributes(), fixprefix[i](fsPool))
+					if err != nil {
+						log.Warnln("Attribute", fixprefix[i](fsDomain+"-"+fsPool), "not found")
+						continue
+					}
 				}
 
 				fsDevices := strings.Split(deviceStr, ",")
@@ -135,7 +173,7 @@ func prepareScaleIONode(store *kvstore.KvStore, offer *mesos.Offer) (*types.Scal
 					if nPool.Devices == nil {
 						nPool.Devices = make([]string, 0)
 					}
-					//TODO check for device
+					//TODO check for device existence
 					nPool.Devices = append(nPool.Devices, fsDevice)
 				}
 			}

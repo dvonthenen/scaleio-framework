@@ -21,18 +21,7 @@ import (
 )
 
 const (
-	rootKey           = "scaleio-framework"
-	mesosServerPrefix = "scaleio-s-"
-	mesosClientPrefix = "scaleio-c-"
-
-	//SdsModeAll is both client and server
-	SdsModeAll = 1
-
-	//SdsModeClient is client only
-	SdsModeClient = 2
-
-	//SdsModeServer is server only
-	SdsModeServer = 3
+	rootKey = "scaleio-framework"
 )
 
 var (
@@ -67,10 +56,11 @@ type StoragePool struct {
 
 //Sds representation
 type Sds struct {
-	Name   string
-	Mode   int
-	Delete bool
-	Add    bool
+	Name     string
+	Mode     string
+	FaultSet string
+	Delete   bool
+	Add      bool
 }
 
 //ProtectionDomain representation
@@ -144,10 +134,9 @@ func NewKvStore(cfg *config.Config) (*KvStore, error) {
 	if err != nil {
 		log.Errorln("Failed to set version on store:", err)
 		return nil, err
-	} else {
-		log.Debugln("Successfully set KV Store version to:", config.VersionInt)
 	}
 
+	log.Debugln("Successfully set KV Store version to:", config.VersionInt)
 	myKvStore := &KvStore{
 		Config:  cfg,
 		Store:   myStore,
@@ -387,7 +376,7 @@ func (kv *KvStore) GetNodeInfo(nodeID string) (int, int, error) {
 
 	var persona, state int
 
-	pairPersona, errPersona := kv.Store.Get(kv.RootKey + "/configuration/" + nodeID + "/persona")
+	pairPersona, errPersona := kv.Store.Get(kv.RootKey + "/nodes/" + nodeID + "/persona")
 	if errPersona != nil {
 		log.Errorln("Store.Get(persona) err:", errPersona)
 		log.Debugln("GetNodeInfo LEAVE")
@@ -406,7 +395,7 @@ func (kv *KvStore) GetNodeInfo(nodeID string) (int, int, error) {
 		return 0, 0, errPersona
 	}
 
-	pairState, errState := kv.Store.Get(kv.RootKey + "/configuration/" + nodeID + "/state")
+	pairState, errState := kv.Store.Get(kv.RootKey + "/nodes/" + nodeID + "/state")
 	if errState != nil {
 		log.Errorln("Store.Get(state) err:", errState)
 		log.Debugln("GetNodeInfo LEAVE")
@@ -438,7 +427,7 @@ func (kv *KvStore) SetNodeInfo(nodeID string, persona int, state int) error {
 
 	rootConfig := kv.RootKey + "/configuration"
 	kv.Store.Put(rootConfig, []byte(""), nil)
-	rootNode := kv.RootKey + "/configuration/" + nodeID
+	rootNode := kv.RootKey + "/nodes/" + nodeID
 	kv.Store.Put(rootNode, []byte(""), nil)
 
 	if persona != -1 {
@@ -503,9 +492,9 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 	log.Debugln("GetMetadata LEAVE")
 	log.Debugln("nodeID:", nodeID)
 
-	rootNode := kv.RootKey + "/configuration/" + nodeID + "/domains"
+	rootNode := kv.RootKey + "/nodes/" + nodeID + "/domains"
 
-	domainNode := rootNode + "/domains"
+	domainNode := rootNode + "/domainlist"
 	pairDomain, errDomain := kv.Store.Get(domainNode)
 	if errDomain != nil {
 		log.Errorln("Store.Get(domain) err:", errDomain)
@@ -532,8 +521,8 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 		pd.Sdss = make(map[string]*Sds)
 		md.ProtectionDomains[domain] = pd
 
-		//Sds
-		sdsNode := rootNode + "/" + domain + "/sdss"
+		//Sdss
+		sdsNode := rootNode + "/" + domain + "/sdslist"
 		pairSds, errSds := kv.Store.Get(sdsNode)
 		if errSds != nil {
 			log.Errorln("Store.Get(sds) err:", errSds)
@@ -548,19 +537,48 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 		log.Debugln(pairSds.Key, "=", string(pairSds.Value))
 
 		sdsList := strings.Split(string(pairSds.Value), ",")
-		for index, sds := range sdsList {
+		for _, sds := range sdsList {
 			s := new(Sds)
 			s.Name = sds
-			if len(sdsList) == 1 {
-				s.Mode = SdsModeAll
-			} else {
-				s.Mode = index + 2
+
+			sdsRoot := rootNode + "/" + domain + "/sdss/" + sds
+
+			sdsType := sdsRoot + "/type"
+			pairType, errType := kv.Store.Get(sdsType)
+			if errType != nil {
+				log.Errorln("Store.Get(", sdsType, ") err:", errType)
+				log.Debugln("GetMetadata LEAVE")
+				return nil, errType
 			}
+			if pairType == nil {
+				log.Errorln("pairType = nil. Return error.")
+				log.Debugln("GetMetadata LEAVE")
+				return nil, ErrInvalidKeyValue
+			}
+			log.Debugln(pairType.Key, "=", string(pairType.Value))
+
+			sdsFault := sdsRoot + "/faultset"
+			pairFault, errFault := kv.Store.Get(sdsFault)
+			if errFault != nil {
+				log.Errorln("Store.Get(", sdsFault, ") err:", errFault)
+				log.Debugln("GetMetadata LEAVE")
+				return nil, errFault
+			}
+			if pairFault == nil {
+				log.Errorln("pairFault = nil. Return error.")
+				log.Debugln("GetMetadata LEAVE")
+				return nil, ErrInvalidKeyValue
+			}
+			log.Debugln(pairFault.Key, "=", string(pairFault.Value))
+
+			s.Mode = string(pairType.Value)
+			s.FaultSet = string(pairFault.Value)
+
 			pd.Sdss[sds] = s
 		}
 
 		//Pools
-		poolNode := rootNode + "/" + domain + "/pools"
+		poolNode := rootNode + "/" + domain + "/poollist"
 		pairPool, errPool := kv.Store.Get(poolNode)
 		if errPool != nil {
 			log.Errorln("Store.Get(pool) err:", errPool)
@@ -583,7 +601,7 @@ func (kv *KvStore) GetMetadata(nodeID string) (*Metadata, error) {
 			pd.Pools[pool] = sp
 
 			//Devices
-			deviceNode := rootNode + "/" + domain + "/" + pool
+			deviceNode := rootNode + "/" + domain + "/pools/" + pool
 			pairDevice, errDevice := kv.Store.Get(deviceNode)
 			if errDevice != nil {
 				log.Errorln("Store.Get(device) err:", errDevice)
@@ -616,7 +634,7 @@ func (kv *KvStore) SetMetadata(nodeID string, metaData *Metadata) error {
 	log.Debugln("SetMetadata ENTER")
 	log.Debugln("nodeID:", nodeID)
 
-	rootNode := kv.RootKey + "/configuration/" + nodeID + "/domains"
+	rootNode := kv.RootKey + "/nodes/" + nodeID
 	errRoot := kv.Store.Put(rootNode, []byte(""), nil)
 	if errRoot == nil {
 		log.Debugln("Create dir", rootNode, "succeeded")
@@ -624,10 +642,18 @@ func (kv *KvStore) SetMetadata(nodeID string, metaData *Metadata) error {
 		log.Errorln("Failed to create dir", rootNode, ". Err:", errRoot)
 	}
 
+	domainRoot := rootNode + "/domains"
+	errDomainRoot := kv.Store.Put(domainRoot, []byte(""), nil)
+	if errDomainRoot == nil {
+		log.Debugln("Create dir", domainRoot, "succeeded")
+	} else {
+		log.Errorln("Failed to create dir", domainRoot, ". Err:", errDomainRoot)
+	}
+
 	//Domain
 	domainList := ""
 	for _, domain := range metaData.ProtectionDomains {
-		domainNode := rootNode + "/" + domain.Name
+		domainNode := domainRoot + "/" + domain.Name
 		log.Debugln("Enter", domainNode)
 
 		if len(domain.Pools) == 0 {
@@ -658,26 +684,75 @@ func (kv *KvStore) SetMetadata(nodeID string, metaData *Metadata) error {
 		}
 
 		//Sds
+		sdsRoot := domainNode + "/sdss"
+		errSdsRoot := kv.Store.Put(sdsRoot, []byte(""), nil)
+		if errSdsRoot == nil {
+			log.Debugln("Create dir", sdsRoot, "succeeded")
+		} else {
+			log.Errorln("Failed to create dir", sdsRoot, ". Err:", errSdsRoot)
+		}
+
 		sdsList := ""
 		for _, sds := range domain.Sdss {
+			sdsNode := sdsRoot + "/" + sds.Name
+			if sds.Delete {
+				err := kv.deleteTree(sdsNode)
+				if err == nil {
+					log.Debugln("DeleteTree", sdsNode, "succeeded")
+				} else {
+					log.Warnln("DeleteTree", sdsNode, ". Err:", err)
+				}
+				continue
+			}
 			if len(sdsList) > 0 {
 				sdsList += ","
 			}
 			sdsList += sds.Name
+
+			errSdsNode := kv.Store.Put(sdsNode, []byte(""), nil)
+			if errSdsNode == nil {
+				log.Debugln("Create dir", sdsNode, "succeeded")
+			} else {
+				log.Errorln("Failed to create dir", sdsNode, ". Err:", errSdsNode)
+			}
+
+			sdsNodeType := sdsNode + "/type"
+			errSdsType := kv.Store.Put(sdsNodeType, []byte(sds.Mode), nil)
+			if errSdsType == nil {
+				log.Debugln("Set", sdsNodeType, "=", sds.Mode, "succeeded")
+			} else {
+				log.Errorln("Failed to set", sdsNodeType, ". Err:", errSdsType)
+			}
+
+			sdsNodeFault := sdsNode + "/faultset"
+			errSdsFault := kv.Store.Put(sdsNodeFault, []byte(sds.FaultSet), nil)
+			if errSdsFault == nil {
+				log.Debugln("Set", sdsNodeFault, "=", sds.Mode, "succeeded")
+			} else {
+				log.Errorln("Failed to set", sdsNodeFault, ". Err:", errSdsFault)
+			}
 		}
 
-		sdsNode := domainNode + "/sdss"
-		errSds := kv.Store.Put(sdsNode, []byte(sdsList), nil)
+		sdsListNode := domainNode + "/sdslist"
+		errSds := kv.Store.Put(sdsListNode, []byte(sdsList), nil)
 		if errSds == nil {
-			log.Debugln("Set", sdsNode, "=", sdsList, "succeeded")
+			log.Debugln("Set", sdsListNode, "=", sdsList, "succeeded")
 		} else {
-			log.Errorln("Failed to set", sdsNode, ". Err:", errSds)
+			log.Errorln("Failed to set", sdsListNode, ". Err:", errSds)
 		}
 
 		//Pool
+		poolRoot := domainNode + "/pools"
+		errPoolRoot := kv.Store.Put(poolRoot, []byte(""), nil)
+		if errPoolRoot == nil {
+			log.Debugln("Create dir", poolRoot, "succeeded")
+		} else {
+			log.Errorln("Failed to create dir", poolRoot, ". Err:", errPoolRoot)
+		}
+
 		poolList := ""
 		for _, pool := range domain.Pools {
-			poolNode := domainNode + "/" + pool.Name
+			poolNode := poolRoot + "/" + pool.Name
 
 			if len(pool.Devices) == 0 {
 				log.Debugln("DeviceList is empty. Set Delete = true")
@@ -730,7 +805,7 @@ func (kv *KvStore) SetMetadata(nodeID string, metaData *Metadata) error {
 	}
 
 	if len(domainList) > 0 {
-		domainsNode := rootNode + "/domains"
+		domainsNode := rootNode + "/domainlist"
 		errDomains := kv.Store.Put(domainsNode, []byte(domainList), nil)
 		if errDomains == nil {
 			log.Debugln("Set", domainsNode, "=", domainList, "succeeded")
