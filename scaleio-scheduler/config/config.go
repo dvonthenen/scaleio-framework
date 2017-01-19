@@ -200,6 +200,8 @@ func (cfg *Config) AddFlags(fs *flag.FlagSet) {
 
 //NewConfig creates a new Config object
 func NewConfig() *Config {
+	//TODO use MESOS_AGENT_ENDPOINT to autodiscover. remove port.
+	//MESOS_AGENT_ENDPOINT = 172.31.42.227:5051
 	ip, err := xplatform.GetInstance().Nw.AutoDiscoverIP()
 	if err != nil {
 		ip = "127.0.0.1"

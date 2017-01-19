@@ -11,6 +11,16 @@ import (
 )
 
 /*
+It looks like multiple IPs (either virtual or multiple NICs) doesnt make a difference
+when making SDSs. Once an SDS (hostname is resolved) is added to ScaleIO,
+that entire node is dedicated to that Protection Domain.
+
+The consequence is that you can either have a single NIC set to "all" or
+1 NIC = "sdsOnly" and 1 NIC "sdcOnly". Meaning PD, SP and SDS is actually
+a tuple despite what the API could lead you to believe.
+*/
+
+/*
 Metadata structure on disk for the Mesos Agent:
 
 /etc/mesos-slave/attributes/<attribute name>
@@ -59,7 +69,9 @@ scaleio-framework/<framework role>
 					poollist = pool1,pool2
 					/pools
 						pool1 = /dev/xvdf,/dev/xvdg
+						pool1-sds = 10.0.0.10
 						pool2 = /dev/xvdh
+						pool2-sds = 10.0.1.10
 				/domain2
 					sdslist = 10.0.0.12
 					/sdss
@@ -70,6 +82,7 @@ scaleio-framework/<framework role>
 					poollist = pool3
 					/pools
 						pool3 = /dev/xvdi
+						pool3-sds = 10.0.0.12
 		/10.0.0.11
 			persona = 2
 			state = 2, 3, etc

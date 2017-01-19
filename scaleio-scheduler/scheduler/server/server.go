@@ -521,7 +521,7 @@ func (s *RestServer) processMetadata(client *goscaleio.Client, node *types.Scale
 		scaleioDomain := goscaleio.NewProtectionDomainEx(client, tmpDomain)
 
 		//Sds
-		var scaleioSds *goscaleio.Sds
+		scaleioSdss := make(map[string]*goscaleio.Sds)
 
 		for _, sds := range domain.Sdss {
 			tmpSds, errSds := scaleioDomain.FindSds("Name", sds.Name)
@@ -549,6 +549,9 @@ func (s *RestServer) processMetadata(client *goscaleio.Client, node *types.Scale
 			} else {
 				log.Infoln("SDS exists:", sds.Name, "FaultSet:", tmpSds.FaultSetID)
 			}
+
+			scaleioSds := goscaleio.NewSdsEx(client, tmpSds)
+			scaleioSdss[scaleioSds.Sds.Name] = scaleioSds
 		}
 
 		//StoragePool

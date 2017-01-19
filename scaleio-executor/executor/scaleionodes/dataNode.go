@@ -184,6 +184,8 @@ func (sdn *ScaleioDataNode) RunStateInstallRexRay() {
 		if sdn.State.Debug {
 			log.Infoln("Skipping the reboot since Debug is TRUE")
 		} else {
+			//TODO use MESOS_AGENT_ENDPOINT to autodiscover. remove port.
+			//MESOS_AGENT_ENDPOINT = 172.31.42.227:5051
 			ip1, err1 := xplatform.GetInstance().Nw.AutoDiscoverIP()
 			ip2, err2 := sdn.Config.ParseIPFromRestURI()
 
